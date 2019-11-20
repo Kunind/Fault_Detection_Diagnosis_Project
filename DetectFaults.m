@@ -133,3 +133,17 @@ cm = confusionchart(GroundTruth_Test,Predictions_CoarseTree);
 cm.Normalization = 'column-normalized';
 title('Decision Tree (Coarse): Confusion Chart')
 
+
+%% SVM testing 
+% ######## Uncomment if the file exits
+% load('Quadratic SVM model.mat')
+Predictions_SVM = QuadraticSVM.predictFcn(dataTest);
+ActualResponse_dataTest = dataTest.FaultDetectionGroundTruth;
+Correct_Predictions_SVM = nnz(ActualResponse_dataTest == Predictions_SVM);
+Accuracy_SVM = Correct_Predictions_SVM/length(ActualResponse_dataTest)*100;
+
+%% Plots Confusion chart for SVM
+figure('WindowStyle','docked')
+cm = confusionchart(ActualResponse_dataTest,Predictions_SVM);
+cm.Normalization = 'column-normalized';
+title('Test data SVM (Quadratic): Confusion Chart')
