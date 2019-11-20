@@ -1,4 +1,4 @@
-function Data = LoadData(FolderName)
+function Data = LoadData(FolderName,DataName)
 % This function uses the user given input Folder to load the dataset.
 % LoadData considers all the variables after the first column as a double
 % type format. NOTE: dirr function from Math File Exchange
@@ -12,7 +12,15 @@ function Data = LoadData(FolderName)
 % for various datasets in the folder
 % ####################
 
-FileNames = dirr([FolderName '\*.csv']);
+if DataName == "All"
+    FileNames = dirr([FolderName '\*.csv']);
+else
+    FileNames = dirr([FolderName '\' DataName '.csv']);
+    if isempty(FileNames)
+        error('Cannot locate the file. Please check the file name, do not include .csv')
+    end
+end
+        
 
 % Change filenames from struct format to string format
 FileNames2 = ""; % Initialize variable
