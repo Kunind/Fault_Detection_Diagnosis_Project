@@ -8,26 +8,6 @@
 FolderName = 'C:\Users\kunin\Google Drive\Desktop\School\A.I. in Energy Systems\Project FDD\Data\';
 Data = LoadData(FolderName);
 DataTable_1 = Data.MZVAV_1;
-% clear Data
-%% Testing PCA
-% TableNames = fieldnames(Data);
-% 
-% for i = 1:length(TableNames)
-%    DataTable = Data.(TableNames{i});
-%    
-%    [~,~,~,~,Var_Exp] = ...
-%     pca(DataTable{:,2:end-1});
-% 
-% figure('WindowStyle','docked')
-% pareto(Var_Exp)
-% Heading = sprintf('Pareto chart (PCA): %s',TableNames{i});
-% title(Heading);
-% ylabel('Variance Explained (%)')
-% % xticklabels({'AHU Supply Air Temperature', 'AHU Supply Air Temperature Setpoint'})
-% xlabel('Predictors')
-% % title('Pareto Chart (PCA)')
-%     
-% end
 %%
 CatTable = table();
 % Variables with categorical values
@@ -85,18 +65,8 @@ ClassificationData.AHU_SupplyAirFanStatus = CatTable.AHU_SupplyAirFanStatus;
 ClassificationData.AHU_ReturnAirFanStatus = CatTable.AHU_ReturnAirFanStatus; 
 ClassificationData.OccupancyModeIndicator = CatTable.OccupancyModeIndicator; 
 ClassificationData.FaultDetectionGroundTruth = CatTable.FaultDetectionGroundTruth; 
-%% Split Data into Training, Validation and Testing
-% Cross varidation (train: 60%, test: 40%)
-cv = cvpartition(size(ClassificationData,1),'HoldOut',0.4);
-idx = cv.test;
 
-% Separate to training and test data
-dataTrain = ClassificationData(~idx,:);
-dataTest  = ClassificationData(idx,:);
 
-% Numerical Data
-Num_dataTrain = ClassificationData{~idx,2:end-1};
-Num_dataTrain_Response = logical(ClassificationData{~idx,end});
 %%
 
 NeuralNetData = Data.MZVAV_1;
@@ -105,5 +75,61 @@ NeuralNetData.AHU_ReturnAirFanStatus = logical(NeuralNetData.AHU_ReturnAirFanSta
 NeuralNetData.OccupancyModeIndicator = logical(NeuralNetData.OccupancyModeIndicator);
 NeuralNetData.FaultDetectionGroundTruth = logical(NeuralNetData.FaultDetectionGroundTruth); 
 
+% Amrita's Dataset 
 Num_dataTrain = NeuralNetData{:,2:end-1};
 Num_dataTrain_Response = NeuralNetData{:,end};
+
+%% Split Data into Training, Validation and Testing
+% Cross varidation (train: 60%, test: 40%)
+cv = cvpartition(size(ClassificationData,1),'HoldOut',0.4);
+idx = cv.test;
+
+% Separate to training and test data
+% Mohit and Kunind's Dataset
+dataTrain = ClassificationData(~idx,:);
+dataTest  = ClassificationData(idx,:);
+
+% Fit Decision tree models
+
+[mdl_FineTree, AccuracyTrain_FineTree] = trainFineTreeClassifier(dataTrain);
+[mdl_MediumTree, AccuracyTrain_MediumTree] = trainMediumTreeClassifier(dataTrain);
+[mdl_CoarseTree, AccuracyTrain_CoarseTree] = trainCoarseTreeClassifier(dataTrain);
+
+% Predictions
+GroundTruth_Test = dataTest{:,end};
+dataTest.FaultDetectionGroundTruth = [];
+Predictions_FineTree = mdl_FineTree.predictFcn(dataTest);
+Predictions_MediumTree = mdl_MediumTree.predictFcn(dataTest);
+Predictions_CoarseTree = mdl_CoarseTree.predictFcn(dataTest);
+%
+Correct_Predictions_FineTree = nnz(GroundTruth_Test == Predictions_FineTree);
+Accuracy_FineTree = Correct_Predictions_FineTree/length(GroundTruth_Test)*100;
+
+Correct_Predictions_MediumTree = nnz(GroundTruth_Test == Predictions_MediumTree);
+Accuracy_MediumTree = Correct_Predictions_MediumTree/length(GroundTruth_Test)*100;
+
+Correct_Predictions_CoarseTree = nnz(GroundTruth_Test == Predictions_CoarseTree);
+Accuracy_CoarseTree = Correct_Predictions_CoarseTree/length(GroundTruth_Test)*100;
+
+
+%% Plots Decision Tree
+view(mdl_FineTree.ClassificationTree,'mode','graph')
+view(mdl_MediumTree.ClassificationTree,'mode','graph')
+view(mdl_CoarseTree.ClassificationTree,'mode','graph')
+
+
+figure('WindowStyle','docked')
+cm = confusionchart(GroundTruth_Test,Predictions_FineTree);
+cm.Normalization = 'column-normalized';
+title('Decision Tree (Fine): Confusion Chart')
+
+figure('WindowStyle','docked')
+cm = confusionchart(GroundTruth_Test,Predictions_MediumTree);
+cm.Normalization = 'column-normalized';
+title('Decision Tree (Medium): Confusion Chart')
+
+figure('WindowStyle','docked')
+cm = confusionchart(GroundTruth_Test,Predictions_CoarseTree);
+cm.Normalization = 'column-normalized';
+title('Decision Tree (Coarse): Confusion Chart')
+
