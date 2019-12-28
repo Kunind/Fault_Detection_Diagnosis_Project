@@ -42,7 +42,7 @@ Data = struct();
 
 % Load Data
 for fileN = 1:size(FileNames,1)
-    Destination = FolderName + FileNames(fileN);
+    Destination = strcat(FolderName, '\', FileNames(fileN));
     
     % Confirm that all the variables are in 'double' type format
     opts = detectImportOptions(Destination);
